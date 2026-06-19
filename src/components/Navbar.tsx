@@ -22,6 +22,7 @@ const Navbar = () => {
     navigate("/login");
   };
 
+  // ===== UPDATED: navLinks with Events =====
   const navLinks = [
     { name: "What's New", path: "/" },
     { name: "What To Do", path: "/destinations" },

@@ -14,6 +14,8 @@ import MyItineraries from "../pages/MyItineraries";
 import StayDetail from "../pages/StayDetail";
 import WeatherWidget from "../pages/WeatherWidget";
 import BookingDetail from "../pages/BookingDetail";
+import Events from "../pages/Events";
+import EventDetail from "../pages/EventDetail";
 
 const PaymentReturn = () => (
   <div className="min-h-screen bg-[#faf8f4] flex items-center justify-center">
@@ -267,6 +269,22 @@ const AppRouter = () => {
           element={
             <RequireAuth roles={["ADMIN"]}>
               <AdminDashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <RequireAuth>
+              <Events />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/event/:slug"
+          element={
+            <RequireAuth>
+              <EventDetail />
             </RequireAuth>
           }
         />
