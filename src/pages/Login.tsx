@@ -28,11 +28,13 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/v1/auth/google";
+    window.location.href =
+      "https://travel-lanka-be.vercel.app/api/v1/auth/google";
   };
 
   const handleFacebookLogin = () => {
-    window.location.href = "http://localhost:5000/api/v1/auth/facebook";
+    window.location.href =
+      "https://travel-lanka-be.vercel.app/api/v1/auth/facebook";
   };
 
   return (
