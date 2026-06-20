@@ -1415,7 +1415,7 @@ const AdminDashboard = () => {
                                   </td>
                                   <td className="px-4 py-3">
                                     <span
-                                      className={`text-[9px] tracking-widest uppercase border px-2 py-0.5 font-light ${sc.text} ${sc.border} ${sc.bg}`}
+                                      className={`text-[9px] tracking-widest uppercase border px-2 py-0.5 font-light ${sc}`}
                                     >
                                       {b.status}
                                     </span>
