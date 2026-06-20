@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import LoadingSpinner from "../components/LoadingSpinner";
 import api from "../api/axiosInspector";
 
-// Sri Lanka's main cities / tourist spots
+
 const SRI_LANKA_CITIES = [
   { name: "Colombo", region: "Western Province" },
   { name: "Kandy", region: "Central Province" },
@@ -30,16 +32,43 @@ const weatherIcons: Record<string, string> = {
   Mist: "🌫️",
   Haze: "🌫️",
   Fog: "🌫️",
+  Smoke: "💨",
+  Dust: "🌪️",
 };
 
-const weatherBg: Record<string, string> = {
-  Clear: "from-amber-500/10 to-orange-400/5",
-  Clouds: "from-slate-400/10 to-gray-300/5",
-  Rain: "from-blue-500/10 to-cyan-400/5",
-  Drizzle: "from-blue-400/10 to-cyan-300/5",
-  Thunderstorm: "from-purple-600/10 to-indigo-500/5",
-  Mist: "from-gray-400/10 to-slate-300/5",
-  Haze: "from-yellow-400/10 to-amber-300/5",
+const getWeatherBg = (main: string): string => {
+  const bgMap: Record<string, string> = {
+    Clear: "from-amber-400/10 to-orange-300/5",
+    Clouds: "from-slate-400/10 to-gray-300/5",
+    Rain: "from-blue-500/10 to-cyan-400/5",
+    Drizzle: "from-blue-400/10 to-cyan-300/5",
+    Thunderstorm: "from-purple-600/10 to-indigo-500/5",
+    Mist: "from-gray-400/10 to-slate-300/5",
+    Haze: "from-yellow-400/10 to-amber-300/5",
+    Fog: "from-gray-400/10 to-slate-300/5",
+    Smoke: "from-gray-500/10 to-gray-400/5",
+    Dust: "from-amber-600/10 to-yellow-500/5",
+  };
+  return bgMap[main] || "from-blue-400/10 to-cyan-300/5";
+};
+
+const getWeatherAdvice = (main: string, temp: number): string => {
+  if (main === "Rain" || main === "Thunderstorm" || main === "Drizzle") {
+    return " Carry an umbrella and plan indoor activities";
+  }
+  if (main === "Clear" && temp > 30) {
+    return " Stay hydrated, use sunscreen, and wear light clothing";
+  }
+  if (main === "Clear" && temp < 20) {
+    return " Pack a light jacket for cooler weather";
+  }
+  if (main === "Clouds") {
+    return " Great for outdoor sightseeing without harsh sun";
+  }
+  if (main === "Mist" || main === "Fog" || main === "Haze") {
+    return " Drive carefully with headlights on";
+  }
+  return " Perfect conditions for your Sri Lanka adventure!";
 };
 
 interface WeatherData {
@@ -53,9 +82,17 @@ interface WeatherData {
   icon: string;
   visibility: number;
   pressure: number;
+  country?: string;
+  sunrise?: number;
+  sunset?: number;
 }
 
-const WeatherWidget = () => {
+interface WeatherWidgetProps {
+  embedded?: boolean;
+}
+
+const WeatherWidget = ({ embedded = false }: WeatherWidgetProps) => {
+  const navigate = useNavigate();
   const [selectedCity, setSelectedCity] = useState("Colombo");
   const [customCity, setCustomCity] = useState("");
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -63,6 +100,7 @@ const WeatherWidget = () => {
   const [error, setError] = useState("");
   const [allWeather, setAllWeather] = useState<WeatherData[]>([]);
   const [loadingAll, setLoadingAll] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Fetch single city weather
   const fetchWeather = async (city: string) => {
@@ -72,6 +110,7 @@ const WeatherWidget = () => {
     try {
       const res = await api.get(`/weather?city=${encodeURIComponent(city)}`);
       setWeather(res.data);
+      setIsInitialLoad(false);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to fetch weather data");
       setWeather(null);
@@ -80,29 +119,28 @@ const WeatherWidget = () => {
     }
   };
 
-  // Fetch weather for all cities
   const fetchAllWeather = async () => {
     setLoadingAll(true);
     try {
-      const results = await Promise.allSettled(
-        SRI_LANKA_CITIES.slice(0, 6).map((c) =>
-          api.get(`/weather?city=${encodeURIComponent(c.name)}`),
-        ),
+      const cityNames = SRI_LANKA_CITIES.slice(0, 6)
+        .map((c) => c.name)
+        .join(",");
+      const res = await api.get(
+        `/weather/multiple?cities=${encodeURIComponent(cityNames)}`,
       );
-      const data = results
-        .filter((r) => r.status === "fulfilled")
-        .map((r: any) => r.value.data);
-      setAllWeather(data);
+      setAllWeather(res.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching multiple cities:", err);
     } finally {
       setLoadingAll(false);
     }
   };
 
   useEffect(() => {
-    fetchWeather(selectedCity);
-    fetchAllWeather();
+    const init = async () => {
+      await Promise.all([fetchWeather(selectedCity), fetchAllWeather()]);
+    };
+    init();
   }, []);
 
   const handleCitySelect = (city: string) => {
@@ -113,56 +151,92 @@ const WeatherWidget = () => {
 
   const handleCustomSearch = () => {
     if (customCity.trim()) {
+      setSelectedCity(customCity.trim());
       fetchWeather(customCity.trim());
     }
   };
 
-  const bgClass =
-    weather?.main && weatherBg[weather.main]
-      ? weatherBg[weather.main]
-      : "from-blue-400/10 to-cyan-300/5";
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleCustomSearch();
+    }
+  };
+
+  const bgClass = weather?.main
+    ? getWeatherBg(weather.main)
+    : "from-blue-400/10 to-cyan-300/5";
+  const weatherAdvice = weather?.main
+    ? getWeatherAdvice(weather.main, weather.temp)
+    : "";
 
   return (
-    <div className="bg-[#faf8f4] min-h-screen">
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');`}</style>
-      <Navbar />
+    <div className={embedded ? "" : "bg-[#faf8f4] min-h-screen"}>
+      {!embedded && (
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');`}</style>
+      )}
 
-      {/* Hero Header */}
-      <div className="bg-[#0a1628] pt-28 pb-16 relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(201,146,42,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(201,146,42,0.8) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#C9922A] to-transparent" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-6 h-px bg-[#C9922A]/60" />
-            <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
-              Travel Intelligence
-            </span>
-          </div>
-          <h1
+      {!embedded && <Navbar />}
+
+      {!embedded && (
+        <div className="bg-[#0a1628] pt-28 pb-16 relative overflow-hidden">
+          <div
+            className="absolute inset-0 opacity-[0.04]"
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: "clamp(2rem, 5vw, 3.5rem)",
-              fontStyle: "italic",
+              backgroundImage:
+                "linear-gradient(rgba(201,146,42,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(201,146,42,0.8) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
             }}
-            className="text-white font-light mb-2"
-          >
-            Sri Lanka Weather
-          </h1>
-          <p className="text-white/40 text-sm font-light">
-            Live weather conditions across the island — plan your journey with
-            confidence
-          </p>
+          />
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#C9922A] to-transparent" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-white/40 text-[10px] tracking-[0.2em] uppercase font-light hover:text-[#C9922A] transition-colors mb-4"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                />
+              </svg>
+              Back
+            </button>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-6 h-px bg-[#C9922A]/60" />
+              <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+                Travel Intelligence
+              </span>
+            </div>
+            <h1
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                fontStyle: "italic",
+              }}
+              className="text-white font-light mb-2"
+            >
+              Sri Lanka Weather
+            </h1>
+            <p className="text-white/40 text-sm font-light max-w-md">
+              Live weather conditions across the island — plan your journey with
+              confidence
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div
+        className={
+          embedded ? "" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+        }
+      >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Left - Search & City selector */}
           <div className="lg:col-span-1 space-y-6">
@@ -177,16 +251,16 @@ const WeatherWidget = () => {
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-6 h-px bg-[#C9922A]" />
                 <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
-                  Search City
+                  Search Anywhere
                 </span>
               </div>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Enter any city..."
+                  placeholder="Enter city name..."
                   value={customCity}
                   onChange={(e) => setCustomCity(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleCustomSearch()}
+                  onKeyPress={handleKeyPress}
                   className="flex-1 px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors"
                   style={{ borderRadius: 0 }}
                 />
@@ -229,7 +303,7 @@ const WeatherWidget = () => {
                   Popular Destinations
                 </span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1 custom-scroll">
                 {SRI_LANKA_CITIES.map((city) => (
                   <button
                     key={city.name}
@@ -240,14 +314,17 @@ const WeatherWidget = () => {
                         : "hover:bg-[#faf8f4] border-l-2 border-transparent"
                     }`}
                   >
-                    <span
-                      className={`text-sm font-light ${
-                        selectedCity === city.name && !customCity
-                          ? "text-[#C9922A]"
-                          : "text-[#1a3a5c]"
-                      }`}
-                    >
-                      {city.name}
+                    <span className="flex items-center gap-2">
+                      <span className="text-base">{city.emoji}</span>
+                      <span
+                        className={`text-sm font-light ${
+                          selectedCity === city.name && !customCity
+                            ? "text-[#C9922A]"
+                            : "text-[#1a3a5c]"
+                        }`}
+                      >
+                        {city.name}
+                      </span>
                     </span>
                     <span className="text-gray-300 text-[10px] font-light">
                       {city.region}
@@ -299,11 +376,21 @@ const WeatherWidget = () => {
                       "polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))",
                   }}
                 >
+                  <div className="text-4xl mb-3">🌍</div>
                   <p className="text-red-400 text-sm font-light">{error}</p>
                   <p className="text-gray-300 text-xs mt-1 font-light">
-                    Make sure the city name is correct and the weather backend
-                    is running.
+                    Try checking the city name or try again later
                   </p>
+                  <button
+                    onClick={() => fetchWeather(selectedCity)}
+                    className="mt-4 px-6 py-2 border border-[#C9922A] text-[#C9922A] text-xs tracking-widest uppercase font-light hover:bg-[#C9922A] hover:text-white transition-colors"
+                    style={{
+                      clipPath:
+                        "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))",
+                    }}
+                  >
+                    Retry
+                  </button>
                 </motion.div>
               ) : weather ? (
                 <motion.div
@@ -336,6 +423,11 @@ const WeatherWidget = () => {
                           className="text-white font-light"
                         >
                           {weather.city}
+                          {weather.country && (
+                            <span className="text-white/30 text-sm ml-2 font-light">
+                              {weather.country}
+                            </span>
+                          )}
                         </h2>
                         <p className="text-white/40 text-sm font-light capitalize mt-0.5">
                           {weather.description}
@@ -428,15 +520,7 @@ const WeatherWidget = () => {
                         />
                       </svg>
                       <p className="text-[#C9922A] text-xs font-light">
-                        <span className="font-normal">Travel Tip: </span>
-                        {weather.main === "Rain" ||
-                        weather.main === "Thunderstorm"
-                          ? "Carry a waterproof jacket and plan indoor activities."
-                          : weather.main === "Clear" && weather.temp > 30
-                            ? "It's hot and sunny — stay hydrated and use sunscreen."
-                            : weather.main === "Clouds"
-                              ? "Overcast skies — great for outdoor sightseeing without harsh sun."
-                              : "Good conditions for travel. Enjoy your Sri Lanka journey!"}
+                        {weatherAdvice}
                       </p>
                     </div>
                   </div>
@@ -445,73 +529,97 @@ const WeatherWidget = () => {
             </AnimatePresence>
 
             {/* Quick overview - multiple cities */}
-            {allWeather.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-px bg-[#C9922A]" />
-                  <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
-                    Island Overview
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {loadingAll
-                    ? Array(6)
-                        .fill(0)
-                        .map((_, i) => (
-                          <div
-                            key={i}
-                            className="bg-white border border-gray-100 p-4 animate-pulse h-20"
-                            style={{
-                              clipPath:
-                                "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
-                            }}
-                          />
-                        ))
-                    : allWeather.map((w) => (
-                        <button
-                          key={w.city}
-                          onClick={() => handleCitySelect(w.city)}
-                          className="bg-white border border-gray-100 p-4 text-left hover:border-[#C9922A]/30 transition-colors group"
-                          style={{
-                            clipPath:
-                              "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
-                          }}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="min-w-0">
-                              <p className="text-[#1a3a5c] text-xs font-light group-hover:text-[#C9922A] transition-colors truncate">
-                                {w.city}
-                              </p>
-                              <p className="text-gray-300 text-[10px] capitalize">
-                                {w.description}
-                              </p>
-                            </div>
-                            <div className="text-right flex-shrink-0 ml-2">
-                              <span className="text-lg">
-                                {weatherIcons[w.main] || "🌤️"}
-                              </span>
-                              <p
-                                className="text-[#C9922A] font-light"
-                                style={{
-                                  fontFamily:
-                                    "'Cormorant Garamond', Georgia, serif",
-                                  fontSize: "1rem",
-                                }}
-                              >
-                                {Math.round(w.temp)}°C
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                </div>
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-px bg-[#C9922A]" />
+                <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+                  Island Overview
+                </span>
+                <span className="text-gray-300 text-[10px] font-light ml-auto">
+                  {allWeather.length} cities
+                </span>
               </div>
-            )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {loadingAll ? (
+                  Array(6)
+                    .fill(0)
+                    .map((_, i) => (
+                      <div
+                        key={i}
+                        className="bg-white border border-gray-100 p-4 animate-pulse h-20"
+                        style={{
+                          clipPath:
+                            "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
+                        }}
+                      />
+                    ))
+                ) : allWeather.length === 0 ? (
+                  <div className="col-span-full text-center py-6 text-gray-400 text-sm font-light">
+                    Unable to load weather data for other cities
+                  </div>
+                ) : (
+                  allWeather.map((w) => (
+                    <button
+                      key={w.city}
+                      onClick={() => handleCitySelect(w.city)}
+                      className="bg-white border border-gray-100 p-4 text-left hover:border-[#C9922A]/30 transition-colors group"
+                      style={{
+                        clipPath:
+                          "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
+                      }}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0">
+                          <p className="text-[#1a3a5c] text-xs font-light group-hover:text-[#C9922A] transition-colors truncate">
+                            {w.city}
+                          </p>
+                          <p className="text-gray-300 text-[10px] capitalize truncate">
+                            {w.description}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <span className="text-base">
+                            {weatherIcons[w.main] || "🌤️"}
+                          </span>
+                          <p
+                            className="text-[#C9922A] font-light"
+                            style={{
+                              fontFamily:
+                                "'Cormorant Garamond', Georgia, serif",
+                              fontSize: "1rem",
+                            }}
+                          >
+                            {Math.round(w.temp)}°C
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <Footer />
+      {/* Custom scroll styles */}
+      <style>{`
+        .custom-scroll::-webkit-scrollbar {
+          width: 3px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.05);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+          background: rgba(201, 146, 42, 0.3);
+          border-radius: 3px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(201, 146, 42, 0.6);
+        }
+      `}</style>
+
+      {!embedded && <Footer />}
     </div>
   );
 };

@@ -8,17 +8,18 @@ import FeaturedSection from "../components/FeaturedSection";
 import ItinerarySection from "../components/ItinerarySection";
 import Footer from "../components/Footer";
 import ChatBot from "../components/ChatBot";
-import EventCard from "../components/EventCard"; // NEW
-import { getAllEvents } from "../services/eventService"; // NEW
-import type { Event } from "../types"; // NEW
-import { Link } from "react-router-dom"; // NEW
+import EventCard from "../components/EventCard";
+import { getAllEvents } from "../services/eventService";
+import type { Event } from "../types";
+import { Link } from "react-router-dom";
+import WeatherWidget from "../pages/WeatherWidget";
 
 const Home = () => {
-  // NEW: Events state
+  // Events state
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
 
-  // NEW: Fetch upcoming events
+  // Fetch upcoming events
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -39,12 +40,12 @@ const Home = () => {
   return (
     <div>
       <Navbar />
+
       <Hero />
       <FeaturedSection />
       <NewsletterSection />
       <CategorySection />
 
-      {/* NEW: Events Section */}
       {!eventsLoading && events.length > 0 && (
         <section className="py-20 bg-white relative overflow-hidden">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#C9922A] to-transparent" />
@@ -108,7 +109,39 @@ const Home = () => {
         </h2>
         <DestinationGrid />
       </div>
+
       <ItinerarySection />
+
+      {/* ===== NEW: Weather Section ===== */}
+      <section className="py-16 bg-[#faf8f4]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-3 mb-3">
+              <div className="w-8 h-px bg-[#C9922A]" />
+              <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+                Plan Your Day
+              </span>
+            </div>
+            <h2
+              className="text-[#1a3a5c] font-light"
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: "2.5rem",
+                fontStyle: "italic",
+              }}
+            >
+              Weather in Sri Lanka
+            </h2>
+            <p className="text-gray-400 text-sm font-light mt-2">
+              Check current weather conditions across the island before you
+              travel
+            </p>
+          </div>
+
+          <WeatherWidget embedded />
+        </div>
+      </section>
+
       <Footer />
       <ChatBot />
     </div>

@@ -22,7 +22,6 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  // ===== UPDATED: navLinks with Events =====
   const navLinks = [
     { name: "What's New", path: "/" },
     { name: "What To Do", path: "/destinations" },
@@ -51,6 +50,13 @@ const Navbar = () => {
         .nav-link-underline.active::after { width: 100%; }
         .scrolled .nav-link-underline::after { background: #1a3a5c; }
         .unscrolled .nav-link-underline::after { background: #C9922A; }
+        
+        /* ===== FIX: Prevent text duplication on mobile ===== */
+        @media (max-width: 768px) {
+          .md\\:flex {
+            display: none !important;
+          }
+        }
       `}</style>
 
       <nav
@@ -69,12 +75,18 @@ const Navbar = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
               <div
-                className={`w-7 h-7 flex items-center justify-center text-sm border ${isScrolled ? "border-[#C9922A] text-[#C9922A]" : "border-white/50 text-white"}`}
+                className={`w-7 h-7 flex items-center justify-center text-sm border ${
+                  isScrolled
+                    ? "border-[#C9922A] text-[#C9922A]"
+                    : "border-white/50 text-white"
+                }`}
               >
                 SL
               </div>
               <span
-                className={`text-sm tracking-[0.25em] uppercase transition-colors ${isScrolled ? "text-[#1a3a5c]" : "text-white"}`}
+                className={`text-sm tracking-[0.25em] uppercase transition-colors ${
+                  isScrolled ? "text-[#1a3a5c]" : "text-white"
+                }`}
                 style={{
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
                   letterSpacing: "0.3em",
@@ -84,7 +96,7 @@ const Navbar = () => {
               </span>
             </Link>
 
-            {/* Desktop Nav */}
+            {/* Desktop Nav - hidden on mobile */}
             <div className="hidden md:flex items-center gap-6 lg:gap-8">
               {navLinks.map((link) => (
                 <Link
@@ -105,17 +117,20 @@ const Navbar = () => {
               ))}
             </div>
 
-            {/* Right Side */}
+            {/* Right Side - hidden on mobile */}
             <div className="hidden md:flex items-center gap-4">
               <button
-                className={`text-[11px] tracking-[0.2em] uppercase font-light transition-colors ${isScrolled ? "text-[#4a5568] hover:text-[#1a3a5c]" : "text-white/60 hover:text-white"}`}
+                className={`text-[11px] tracking-[0.2em] uppercase font-light transition-colors ${
+                  isScrolled
+                    ? "text-[#4a5568] hover:text-[#1a3a5c]"
+                    : "text-white/60 hover:text-white"
+                }`}
               >
                 EN
               </button>
 
               {user ? (
                 <div className="flex items-center gap-3">
-                  {/* Dashboard Link */}
                   <Link
                     to="/dashboard"
                     className={`text-[11px] tracking-[0.18em] uppercase font-light transition-colors ${
@@ -127,7 +142,6 @@ const Navbar = () => {
                     My Trips
                   </Link>
 
-                  {/* Admin Link */}
                   {isAdmin && (
                     <Link
                       to="/admin"
@@ -142,7 +156,9 @@ const Navbar = () => {
                   )}
 
                   <span
-                    className={`text-xs font-light ${isScrolled ? "text-[#4a5568]" : "text-white/70"}`}
+                    className={`text-xs font-light ${
+                      isScrolled ? "text-[#4a5568]" : "text-white/70"
+                    }`}
                   >
                     {user.name.split(" ")[0]}
                   </span>
@@ -175,27 +191,33 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* Mobile Toggle */}
+            {/* Mobile Toggle - only visible on mobile */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`md:hidden p-2 transition-colors ${isScrolled ? "text-[#1a3a5c]" : "text-white"}`}
+              className="md:hidden p-2 transition-colors z-50 relative"
             >
               <div className="flex flex-col gap-1.5 w-5">
                 <span
-                  className={`block h-px transition-all duration-300 ${isScrolled ? "bg-[#1a3a5c]" : "bg-white"} ${isMobileMenuOpen ? "rotate-45 translate-y-2" : ""}`}
+                  className={`block h-px transition-all duration-300 ${
+                    isScrolled ? "bg-[#1a3a5c]" : "bg-white"
+                  } ${isMobileMenuOpen ? "rotate-45 translate-y-2" : ""}`}
                 />
                 <span
-                  className={`block h-px transition-all duration-300 ${isScrolled ? "bg-[#1a3a5c]" : "bg-white"} ${isMobileMenuOpen ? "opacity-0" : ""}`}
+                  className={`block h-px transition-all duration-300 ${
+                    isScrolled ? "bg-[#1a3a5c]" : "bg-white"
+                  } ${isMobileMenuOpen ? "opacity-0" : ""}`}
                 />
                 <span
-                  className={`block h-px transition-all duration-300 ${isScrolled ? "bg-[#1a3a5c]" : "bg-white"} ${isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`}
+                  className={`block h-px transition-all duration-300 ${
+                    isScrolled ? "bg-[#1a3a5c]" : "bg-white"
+                  } ${isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`}
                 />
               </div>
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - only shows when open */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#0a1628]/97 backdrop-blur-md border-t border-white/10">
             <div className="px-6 py-6 space-y-5">
@@ -203,7 +225,11 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`block text-xs tracking-[0.25em] uppercase font-light transition-colors ${isActive(link.path) ? "text-[#C9922A]" : "text-white/70 hover:text-white"}`}
+                  className={`block text-xs tracking-[0.25em] uppercase font-light transition-colors ${
+                    isActive(link.path)
+                      ? "text-[#C9922A]"
+                      : "text-white/70 hover:text-white"
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.name}
