@@ -51,7 +51,6 @@ const Login = () => {
       `}</style>
 
       <div className="min-h-screen flex" style={{ backgroundColor: "#0a1628" }}>
-        {/* ===== Left Panel - Desktop carousel with testimonials ===== */}
         <AuthVisualPanel
           variant="desktop"
           eyebrow="Welcome back"
@@ -65,7 +64,6 @@ const Login = () => {
           description="Sign in to access your saved itineraries, bookmarked destinations, and personalized travel plans."
         />
 
-        {/* Right Panel - Form */}
         <div
           className="w-full lg:w-1/2 flex flex-col"
           style={{ backgroundColor: "#faf8f4" }}
@@ -124,7 +122,11 @@ const Login = () => {
                   />
                 </div>
                 <div className="flex justify-end">
-                  <button className="text-xs text-[#C9922A] font-light hover:underline">
+                  {/* ===== UPDATED: Forgot Password link with navigate ===== */}
+                  <button
+                    onClick={() => navigate("/forgot-password")}
+                    className="text-xs text-[#C9922A] font-light hover:underline transition-colors"
+                  >
                     Forgot password?
                   </button>
                 </div>

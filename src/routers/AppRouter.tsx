@@ -17,6 +17,10 @@ import BookingDetail from "../pages/BookingDetail";
 import Events from "../pages/Events";
 import EventDetail from "../pages/EventDetail";
 
+// ===== NEW: Import ForgotPassword and ResetPassword =====
+import ForgotPassword from "../pages/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword";
+
 const PaymentReturn = () => (
   <div className="min-h-screen bg-[#faf8f4] flex items-center justify-center">
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');`}</style>
@@ -181,6 +185,10 @@ const AppRouter = () => {
         <Route path="/oauth-callback" element={<OAuthCallback />} />
         <Route path="/payment/return" element={<PaymentReturn />} />
         <Route path="/payment/cancel" element={<PaymentCancel />} />
+
+        {/* ===== NEW: Password reset routes ===== */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route
           path="/"
