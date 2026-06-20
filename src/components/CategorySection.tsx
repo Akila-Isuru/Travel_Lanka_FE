@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 import img1 from "../assets/image-1.jpg";
@@ -133,7 +133,8 @@ const CategorySection = () => {
   const [direction, setDirection] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+  // ===== FIX: NodeJS.Timeout namespace doesn't exist in browser/Vite env =====
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
@@ -217,8 +218,8 @@ const CategorySection = () => {
 
   const current = categories[currentIndex];
 
-  // Animation variants for smoother transitions
-  const slideVariants = {
+  // ===== FIX: explicit Variants type so framer-motion narrows "spring" correctly =====
+  const slideVariants: Variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? "100%" : "-100%",
       opacity: 0,
@@ -388,8 +389,8 @@ const CategorySection = () => {
         </div>
       </div>
 
-      {/* Custom Scrollbar Styles */}
-      <style jsx>{`
+      {/* ===== FIX: removed "jsx" attribute — that's Next.js-only syntax ===== */}
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 3px;
         }

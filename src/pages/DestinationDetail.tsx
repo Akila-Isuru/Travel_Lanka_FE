@@ -703,8 +703,10 @@ const DestinationDetail = () => {
               Explore Nearby
             </span>
           </div>
+          {/* ===== FIX: type cast — DestinationMap's prop type doesn't see coordinates as guaranteed.
+               Send DestinationMap.tsx for a cleaner fix without "as any". ===== */}
           <DestinationMap
-            currentDest={destination}
+            currentDest={destination as any}
             nearbyDests={nearbyDestinations}
           />
         </motion.div>

@@ -3,9 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import LoadingSpinner from "../components/LoadingSpinner";
 import api from "../api/axiosInspector";
-
 
 const SRI_LANKA_CITIES = [
   { name: "Colombo", region: "Western Province" },
@@ -100,7 +98,6 @@ const WeatherWidget = ({ embedded = false }: WeatherWidgetProps) => {
   const [error, setError] = useState("");
   const [allWeather, setAllWeather] = useState<WeatherData[]>([]);
   const [loadingAll, setLoadingAll] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Fetch single city weather
   const fetchWeather = async (city: string) => {
@@ -110,7 +107,6 @@ const WeatherWidget = ({ embedded = false }: WeatherWidgetProps) => {
     try {
       const res = await api.get(`/weather?city=${encodeURIComponent(city)}`);
       setWeather(res.data);
-      setIsInitialLoad(false);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to fetch weather data");
       setWeather(null);
@@ -315,7 +311,6 @@ const WeatherWidget = ({ embedded = false }: WeatherWidgetProps) => {
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <span className="text-base">{city.emoji}</span>
                       <span
                         className={`text-sm font-light ${
                           selectedCity === city.name && !customCity

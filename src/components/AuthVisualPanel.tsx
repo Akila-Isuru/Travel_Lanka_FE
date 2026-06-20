@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode } from "react";
+import React, { useState, useEffect, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import sigiriyaLogin from "../assets/sigiriyaLogin.jpg";
