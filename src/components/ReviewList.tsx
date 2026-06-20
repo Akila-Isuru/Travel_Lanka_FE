@@ -5,7 +5,7 @@ import api from "../api/axiosInspector";
 
 interface Review {
   _id: string;
-  user: { name: string };
+  user: { _id: string; name: string };
   rating: number;
   comment: string;
   createdAt: string;
@@ -60,7 +60,7 @@ const ReviewList: React.FC<Props> = ({ reviews, onReviewDeleted }) => {
                     fontStyle: "italic",
                   }}
                 >
-                  {review.user.name}
+                  {review.user?.name || "Unknown User"}
                 </span>
                 <StarRating rating={review.rating} size={4} />
               </div>
@@ -71,7 +71,7 @@ const ReviewList: React.FC<Props> = ({ reviews, onReviewDeleted }) => {
                 {new Date(review.createdAt).toLocaleDateString()}
               </p>
             </div>
-            {(user?._id === review.user._id ||
+            {(user?._id === review.user?._id ||
               user?.roles?.includes("ADMIN")) && (
               <button
                 onClick={() => handleDelete(review._id)}

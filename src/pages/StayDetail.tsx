@@ -9,6 +9,12 @@ import api from "../api/axiosInspector";
 import { initiatePayment } from "../services/paymentService";
 import type { Stay } from "../services/stayService";
 
+// ===== NEW: Review imports =====
+import ReviewForm from "../components/ReviewForm";
+import ReviewList from "../components/ReviewList";
+import StarRating from "../components/StarRating";
+import { getReviewsForTarget } from "../services/reviewService";
+
 const StayDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -27,6 +33,12 @@ const StayDetail = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState("");
 
+  // ===== NEW: Review state =====
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [reviewsCount, setReviewsCount] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+
   useEffect(() => {
     const fetchStay = async () => {
       try {
@@ -40,6 +52,37 @@ const StayDetail = () => {
     };
     fetchStay();
   }, [slug]);
+
+  // ===== NEW: Fetch reviews when stay loads =====
+  useEffect(() => {
+    if (stay?._id) {
+      fetchReviews();
+    }
+  }, [stay?._id]);
+
+  // ===== NEW: Fetch reviews function =====
+  const fetchReviews = async () => {
+    if (!stay?._id) return;
+    try {
+      const res = await getReviewsForTarget(stay._id, "stay");
+      const fetchedReviews = res.data || [];
+      setReviews(fetchedReviews);
+      if (fetchedReviews.length > 0) {
+        const total = fetchedReviews.reduce(
+          (sum: number, r: any) => sum + r.rating,
+          0,
+        );
+        const avg = total / fetchedReviews.length;
+        setAvgRating(Math.round(avg * 10) / 10);
+        setReviewsCount(fetchedReviews.length);
+      } else {
+        setAvgRating(0);
+        setReviewsCount(0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch reviews:", err);
+    }
+  };
 
   const calcNights = () => {
     if (!bookingData.checkIn || !bookingData.checkOut) return 0;
@@ -440,6 +483,50 @@ const StayDetail = () => {
                 </div>
               </motion.div>
             )}
+
+            {/* ===== NEW: Reviews Section ===== */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-8"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-px bg-[#C9922A]" />
+                  <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+                    Guest Reviews
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StarRating rating={avgRating} size={5} />
+                  <span className="text-[#1a3a5c] text-sm font-light">
+                    ({reviewsCount} {reviewsCount === 1 ? "review" : "reviews"})
+                  </span>
+                </div>
+              </div>
+              {user && (
+                <button
+                  onClick={() => setShowReviewForm(!showReviewForm)}
+                  className="mb-5 text-[#C9922A] text-[10px] tracking-[0.2em] uppercase font-light border border-[#C9922A]/30 px-4 py-2 hover:bg-[#C9922A]/5 transition-colors"
+                >
+                  {showReviewForm ? "Cancel" : "Write a Review"}
+                </button>
+              )}
+              {showReviewForm && user && (
+                <div className="mb-6">
+                  <ReviewForm
+                    targetId={stay._id}
+                    targetType="stay"
+                    onReviewAdded={() => {
+                      fetchReviews();
+                      setShowReviewForm(false);
+                    }}
+                  />
+                </div>
+              )}
+              <ReviewList reviews={reviews} onReviewDeleted={fetchReviews} />
+            </motion.div>
 
             {/* Back to Destination */}
             {destSlug && (

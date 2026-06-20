@@ -14,6 +14,12 @@ import type { Event } from "../types";
 import api from "../api/axiosInspector";
 import { initiateEventPayment } from "../services/eventService";
 
+// ===== NEW: Review imports =====
+import ReviewForm from "../components/ReviewForm";
+import ReviewList from "../components/ReviewList";
+import StarRating from "../components/StarRating";
+import { getReviewsForTarget } from "../services/reviewService";
+
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1587560699334-bea93391dcef?w=500";
 
@@ -31,6 +37,12 @@ const EventDetail = () => {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [isBooked, setIsBooked] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
+
+  // ===== NEW: Review state =====
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [reviewsCount, setReviewsCount] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   // ===== Helper: Get event images =====
   const getEventImages = (): string[] => {
@@ -54,6 +66,13 @@ const EventDetail = () => {
     fetchEvent();
   }, [slug]);
 
+  // ===== NEW: Fetch reviews when event loads =====
+  useEffect(() => {
+    if (event?._id) {
+      fetchReviews();
+    }
+  }, [event?._id]);
+
   const fetchEvent = async () => {
     setLoading(true);
     try {
@@ -75,6 +94,30 @@ const EventDetail = () => {
       console.error("Error fetching event:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ===== NEW: Fetch reviews function =====
+  const fetchReviews = async () => {
+    if (!event?._id) return;
+    try {
+      const res = await getReviewsForTarget(event._id, "event");
+      const fetchedReviews = res.data || [];
+      setReviews(fetchedReviews);
+      if (fetchedReviews.length > 0) {
+        const total = fetchedReviews.reduce(
+          (sum: number, r: any) => sum + r.rating,
+          0,
+        );
+        const avg = total / fetchedReviews.length;
+        setAvgRating(Math.round(avg * 10) / 10);
+        setReviewsCount(fetchedReviews.length);
+      } else {
+        setAvgRating(0);
+        setReviewsCount(0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch reviews:", err);
     }
   };
 
@@ -157,7 +200,6 @@ const EventDetail = () => {
 
       const data = res.data;
 
-      // ===== FIXED: Handle free events without payment =====
       if (data.totalPrice > 0 && data.status === "pending") {
         try {
           const paymentRes = await initiateEventPayment(data._id);
@@ -186,7 +228,6 @@ const EventDetail = () => {
           setBookingLoading(false);
         }
       } else {
-        // Free event or already confirmed
         setBookingSuccess(true);
         setIsBooked(true);
         setBookingId(data._id || data.data?._id);
@@ -201,11 +242,6 @@ const EventDetail = () => {
       );
       setBookingLoading(false);
     }
-  };
-
-  const initiatePaymentForEvent = async (bookingId: string) => {
-    const res = await api.post("/payment/initiate-event", { bookingId });
-    return res.data;
   };
 
   const handleCancelBooking = async () => {
@@ -270,7 +306,7 @@ const EventDetail = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/60 via-transparent to-transparent" />
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#C9922A] to-transparent" />
 
-        {/* Thumbnails - Only show if more than 1 image */}
+        {/* Thumbnails */}
         {totalImages > 1 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
             {eventImages.map((img, i) => (
@@ -488,7 +524,7 @@ const EventDetail = () => {
               </motion.div>
             )}
 
-            {/* ===== Gallery Section - Show all images ===== */}
+            {/* Gallery */}
             {totalImages > 1 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -524,6 +560,50 @@ const EventDetail = () => {
                 </div>
               </motion.div>
             )}
+
+            {/* ===== NEW: Reviews Section ===== */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-8"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-px bg-[#C9922A]" />
+                  <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+                    Event Reviews
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StarRating rating={avgRating} size={5} />
+                  <span className="text-[#1a3a5c] text-sm font-light">
+                    ({reviewsCount} {reviewsCount === 1 ? "review" : "reviews"})
+                  </span>
+                </div>
+              </div>
+              {user && (
+                <button
+                  onClick={() => setShowReviewForm(!showReviewForm)}
+                  className="mb-5 text-[#C9922A] text-[10px] tracking-[0.2em] uppercase font-light border border-[#C9922A]/30 px-4 py-2 hover:bg-[#C9922A]/5 transition-colors"
+                >
+                  {showReviewForm ? "Cancel" : "Write a Review"}
+                </button>
+              )}
+              {showReviewForm && user && (
+                <div className="mb-6">
+                  <ReviewForm
+                    targetId={event._id}
+                    targetType="event"
+                    onReviewAdded={() => {
+                      fetchReviews();
+                      setShowReviewForm(false);
+                    }}
+                  />
+                </div>
+              )}
+              <ReviewList reviews={reviews} onReviewDeleted={fetchReviews} />
+            </motion.div>
           </div>
 
           {/* Right Column - Booking Card */}

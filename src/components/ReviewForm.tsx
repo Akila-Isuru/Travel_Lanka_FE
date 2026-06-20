@@ -3,11 +3,16 @@ import StarRating from "./StarRating";
 import api from "../api/axiosInspector";
 
 interface Props {
-  destinationId: string;
+  targetId: string;
+  targetType: "destination" | "event" | "stay";
   onReviewAdded: () => void;
 }
 
-const ReviewForm: React.FC<Props> = ({ destinationId, onReviewAdded }) => {
+const ReviewForm: React.FC<Props> = ({
+  targetId,
+  targetType,
+  onReviewAdded,
+}) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,7 +31,7 @@ const ReviewForm: React.FC<Props> = ({ destinationId, onReviewAdded }) => {
     setLoading(true);
     setError("");
     try {
-      await api.post("/reviews", { destinationId, rating, comment });
+      await api.post("/reviews", { targetId, targetType, rating, comment });
       setRating(0);
       setComment("");
       onReviewAdded();

@@ -456,7 +456,8 @@ const DestinationDetail = () => {
               {showReviewForm && user && (
                 <div className="mb-6">
                   <ReviewForm
-                    destinationId={destination._id}
+                    targetId={destination._id}
+                    targetType="destination"
                     onReviewAdded={() => {
                       fetchReviews();
                       setShowReviewForm(false);
