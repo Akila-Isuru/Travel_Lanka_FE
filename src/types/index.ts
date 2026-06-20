@@ -143,6 +143,8 @@ export interface EventBooking {
   tickets: number;
   totalPrice: number;
   status: "pending" | "confirmed" | "cancelled";
+  // ===== FIX: added paymentStatus, used by AdminDashboard.tsx =====
+  paymentStatus?: "pending" | "paid" | "failed";
   specialRequests?: string;
   bookingDate: string;
   paymentId?: string;
